@@ -513,9 +513,7 @@ Example of optional binding with the guard statement:
 
 ```swift
 private func isMixPanelTrackingEnable() -> Bool {
-	guard let mixpanel = self.mixPanel else {
-            return false
-        }
+	guard let mixpanel = self.mixPanel else { return false }
         
        	mixPanel.track("eventName")
         return true
