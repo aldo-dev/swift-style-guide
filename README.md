@@ -509,8 +509,19 @@ if let unwrappedSubview = optionalSubview {
 }
 ```
 
-### Struct Initializers
+Example of optional binding with the guard statement:
 
+```swift
+private func isMixPanelTrackingEnable() -> Bool {
+	guard let mixpanel = self.mixPanel else {
+            return false
+        }
+        
+       	mixPanel.track("eventName")
+        return true
+    }
+```
+### Struct Initializers
 Use the native Swift struct initializers rather than the legacy CGGeometry constructors.
 
 **Preferred:**
