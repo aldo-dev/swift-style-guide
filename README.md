@@ -33,12 +33,16 @@ Our overarching goals are conciseness, readability, and simplicity.
 
 ## Naming
 
-Use descriptive names with camel case for classes, methods, variables, etc. Class names should be capitalized, while method names and variables should start with a lower case letter.
+Use descriptive names with camel case for classes, methods, variables, etc. Class names should be capitalized, while method names and variables should start with a lower case letter. 
+
+For constants, we recommend using the [constant-k-prefix] rule. Basically, each constant variables should start with a 'k' with camel case.
 
 **Preferred:**
 
 ```swift
-private let maximumWidgetCount = 100
+
+private let kMaximumWidgetCount 	= 100
+let kMaxWidgetHeight 				= 120.0
 
 class WidgetContainer {
   var widgetButton: UIButton
@@ -78,6 +82,9 @@ class Counter {
   func incrementBy(amount: Int) { ... }
 }
 ```
+
+In short, we prefer not to use labels for the first parameter of a function.
+
 
 ### Enumerations
 
@@ -121,7 +128,7 @@ let myClass = MyModule.UsefulClass()
 
 ## Spacing
 
-* Indent using 2 spaces rather than tabs to conserve space and help prevent line wrapping. Be sure to set this preference in Xcode as shown below:
+* Indent using tabs (4 white spaces) to conserve space and remove line wrapping options in XCode. Be sure to set this preference properly in Xcode as shown below:
 
   ![Xcode indent settings](screens/indentation.png)
 
@@ -155,6 +162,58 @@ else {
 When they are needed, use comments to explain **why** a particular piece of code does something. Comments must be kept up-to-date or deleted.
 
 Avoid block comments inline with code, as the code should be as self-documenting as possible. *Exception: This does not apply to those comments used to generate documentation.*
+
+We must add comments to document each functions created in our projects.
+
+Here's an example
+
+```swift
+/**
+ * @method setSize
+ * 
+ * Some description...
+ *
+ * @param {Type} name
+ * Some description...
+ *
+ * @param {Type} [name]
+ * Some description...
+ * 
+ * @param {Type} [name="default-value"]
+ * Some description...
+ *
+ * @param {Type} name.subproperty
+ * Some description...
+ *
+ * @return: {type} description
+ */
+ ```
+
+[For examples, see: https://github.com/senchalabs/jsduck/wiki/@param](https://github.com/senchalabs/jsduck/wiki/@param)
+
+In the function's comment section, you could also show how to use the function via a test
+```swift
+/**
+ * @method camelCase()
+ * 
+ * Some description...
+ *
+ * @param {String} originalStr
+ * Some description... 
+ *
+ *
+ * @return: {String} camel cased version of originalStr
+ * 
+ * @usage: camelCase("this is an example")
+ * 				-> "This Is An Example"
+ */
+```
+
+It's also possible to use special comment tags to indicates certain comment types:
+
+// @hack: use if the following lines of code is a hack of some sort...
+
+// @note <programmer name>: use when you want to mark the code with a special note message.
 
 
 ## Classes and Structures
@@ -237,6 +296,7 @@ class BoardLocation {
 }
 ```
 
+
 ### Protocol Conformance
 
 When adding protocol conformance to a class, prefer adding a separate class extension for the protocol methods. This keeps the related methods grouped together with the protocol and can simplify instructions to add a protocol to a class with its associated methods.
@@ -294,6 +354,33 @@ Keep short function declarations on one line including the opening brace:
 ```swift
 func reticulateSplines(spline: [Double]) -> Bool {
   // reticulate code goes here
+}
+```
+
+Example of long function declarations (make sure that all parameters are indented):
+
+```swift
+func reticulateSplines(spline: [Double], 
+			 adjustmentFactor: Double,
+    	    translateConstant: Int, 
+			    		comment: String) -> Bool {
+  // add code goes here...
+}
+```
+
+Also function declarations thar returns void (nothing), should not specify the void keyword.
+
+**Preferred:**
+```swift
+func playSound(soundType: Int) {
+  // play sound code here.
+}
+```
+
+**Not Preferred:**
+```swift
+func playSound(soundType: Int) -> Void {
+  // play sound code here.
 }
 ```
 
@@ -422,8 +509,19 @@ if let unwrappedSubview = optionalSubview {
 }
 ```
 
-### Struct Initializers
+Example of optional binding with the guard statement:
 
+```swift
+private func isMixPanelTrackingEnable() -> Bool {
+	guard let mixpanel = self.mixPanel else {
+            return false
+        }
+        
+       	mixPanel.track("eventName")
+        return true
+    }
+```
+### Struct Initializers
 Use the native Swift struct initializers rather than the legacy CGGeometry constructors.
 
 **Preferred:**
@@ -543,32 +641,31 @@ let color = "red"
 let colour = "red"
 ```
 
+## Git Rules
+1. Each source file must end with an empty line. [Here's the reason why?](http://adaptivepatchwork.com/2012/03/01/mind-the-end-of-your-line/)
+2. Never push directly into "dev" or "master" branches. Pushes to those branches are only possible via a pull-request after the code review of 1 or 2 developers.
+3. When a developer creates a new branches he must respect the following conventions: <dev initial>-<feature name>  
+**Preferred branch name:**
+```swift
+jl-add-push-notification-support
+ir-add-sound-manager
+```
+
+**Not Preferred branch name:**
+```swift
+addSoundManager
+add_Push_Notification_Support
+```
+
+
 ## Copyright Statement
 
 The following copyright statement should be included at the top of every source
 file:
 
     /**
-     Copyright (c) 2016 ALDOGroup 
-     
-     Permission is hereby granted, free of charge, to any person obtaining a copy
-     of this software and associated documentation files (the "Software"), to deal
-     in the Software without restriction, including without limitation the rights
-     to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-     copies of the Software, and to permit persons to whom the Software is
-     furnished to do so, subject to the following conditions:
-     
-     The above copyright notice and this permission notice shall be included in
-     all copies or substantial portions of the Software.
-     
-     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-     IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-     FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-     AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-     THE SOFTWARE.
-     */
+		© Copyright - Exclusive property of ALDO; all rights reserved. Republication or redistribution of this software and any related material is strictly prohibited without the prior written consent of ALDO.
+     **/
 
 
 ## Credits
