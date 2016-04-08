@@ -274,6 +274,21 @@ The example above demonstrates the following style guidelines:
  + Indent getter and setter definitions and property observers.
  + Don't add modifiers such as `internal` when they're already the default. Similarly, don't repeat the access modifier when overriding a method.
 
+### Singletons
+A singleton is an object which is instantiated exactly once. Only one copy of this object exists and the state is shared and reachable by any other object.
+
+```
+class SomeManager {
+    static let sharedInstance = SomeManager()
+}
+```
+
+With usage:
+
+```
+SomeManager.sharedInstance
+```
+
 
 ### Use of Self
 
@@ -641,7 +656,8 @@ let colour = "red"
 ## Git Rules
 1. Each source file must end with an empty line. [Here's the reason why?](http://adaptivepatchwork.com/2012/03/01/mind-the-end-of-your-line/)
 2. Never push directly into "dev" or "master" branches. Pushes to those branches are only possible via a pull-request after the code review of 1 or 2 developers.
-3. When a developer creates a new branches he must respect the following conventions: <dev initial>-<feature name>  
+3. When a developer creates a new branches he must respect the following conventions: 
+<dev's initial>-<feature name>
 **Preferred branch name:**
 ```swift
 jl-add-push-notification-support
