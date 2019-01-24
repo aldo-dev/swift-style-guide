@@ -158,7 +158,10 @@ someFunctionWithABunchOfArguments(
 let firstCondition = x == firstReallyReallyLongPredicateFunction()
 let secondCondition = y == secondReallyReallyLongPredicateFunction()
 let thirdCondition = z == thirdReallyReallyLongPredicateFunction()
-if firstCondition && secondCondition && thirdCondition {
+
+if firstCondition && 
+   secondCondition && 
+   thirdCondition {
     // do something
 }
 
