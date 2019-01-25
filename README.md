@@ -24,12 +24,15 @@ This guide was last updated for Swift 4.0 on February 14, 2018.
         - [3.6 Protocols](#36-protocols)
         - [3.7 Properties](#37-properties)
         - [3.8 Closures](#38-closures)
-        - [3.9 Arrays](#39-arrays)
+        - [3.9 Arrays and Collections](#39-arraysandcollections)
         - [3.10 Error Handling](#310-error-handling)
         - [3.11 Using `guard` Statements](#311-using-guard-statements)
     - [4. Documentation/Comments](#4-documentationcomments)
         - [4.1 Documentation](#41-documentation)
         - [4.2 Other Commenting Guidelines](#42-other-commenting-guidelines)
+    - [5. Architecture/Patterns](#5-architecturepatterns)
+        - [5.1 Singletons](#51-singletons)
+        - [5.2 Functions/Files](#52-functionsfiles)
 
 ## 1. Code Formatting
 
@@ -393,16 +396,21 @@ for integer in [4, 8, 15, 16, 23, 42] {
 
 * **3.1.3** Prefer not declaring types for constants or variables if they can be inferred anyway.
 
-* **3.1.4** If a function returns multiple values, prefer returning a tuple to using `inout` arguments (it’s best to use labeled tuples for clarity on what you’re returning if it is not otherwise obvious). If you use a certain tuple more than once, consider using a `typealias`. If you’re returning 3 or more items in a tuple, consider using a `struct` or `class` instead.
+* **3.1.4** A function should return only one parameter. If there is a necessity for multiple parametrs then use an output struct. A function should have max 3 arguments where the third one is usualy a completion block, otherwise max 2 arguments. For passing more the one we use an input struct.
 
 ```swift
-func pirateName() -> (firstName: String, lastName: String) {
-    return ("Guybrush", "Threepwood")
+struct PirateInfo {
+    firstName: String
+    lastName: String
 }
 
-let name = pirateName()
-let firstName = name.firstName
-let lastName = name.lastName
+func pirateName() -> PirateInfo {
+    return PirateInfo(firstName: "Guybrush", lastName: "Threepwood")
+}
+
+let info = pirateName()
+let firstName = info.firstName
+let lastName = info.lastName
 ```
 
 * **3.1.5** Be wary of retain cycles when creating delegates/protocols for your classes; typically, these properties should be declared `weak`.
@@ -461,7 +469,7 @@ imageView.backgroundColor = UIColor.white
 imageView.backgroundColor = .white
 ```
 
-* **3.1.11** Prefer not writing `self.` unless it is required.
+* **3.1.11** Prefer not writing `self.` unless it is required or in init methods.
 
 * **3.1.12** When writing methods, keep in mind whether the method is intended to be overridden or not. If not, mark it as `final`, though keep in mind that this will prevent the method from being overwritten for testing purposes. In general, `final` methods result in improved compilation times, so it is good to use this when applicable. Be particularly careful, however, when applying the `final` keyword in a library since it is non-trivial to change something to be non-`final` in a library as opposed to have changing something to be non-`final` in your local project.
 
@@ -619,6 +627,34 @@ guard let myValue = myValue else {
 }
 ```
 
+* **3.5.6** We prefer using optionals monad extension instead of unwrapping them, unless required. The extension takes care of unwrapping and calling a function if need
+```swift
+// PREFERRED
+
+monkeyIsland.do(bookVacation)
+monkeyIsland.do(bragAboutVacation)
+
+// NOT PREFERRED, UNLESS REQUIRED
+guard let monkeyIsland = monkeyIsland else {
+    return
+}
+bookVacation(on: monkeyIsland)
+bragAboutVacation(at: monkeyIsland)
+
+// NOT PREFERRED
+if let monkeyIsland = monkeyIsland {
+    bookVacation(on: monkeyIsland)
+    bragAboutVacation(at: monkeyIsland)
+}
+
+// EVEN LESS PREFERRED
+if monkeyIsland == nil {
+    return
+}
+bookVacation(on: monkeyIsland!)
+bragAboutVacation(at: monkeyIsland!)
+```
+
 ### 3.6 Protocols
 
 When implementing protocols, there are two ways of organizing your code:
@@ -730,14 +766,18 @@ doSomething(1.0, success: { (parameter1) in
 })
 ```
 
-### 3.9 Arrays
+### 3.9 Arrays and Collections
 
-* **3.9.1** In general, avoid accessing an array directly with subscripts. When possible, use accessors such as `.first` or `.last`, which are optional and won’t crash. Prefer using a `for item in items` syntax when possible as opposed to something like `for i in 0 ..< items.count`. If you need to access an array subscript directly, make sure to do proper bounds checking. You can use `for (index, value) in items.enumerated()` to get both the index and the value.
+* **3.9.1** In general, avoid accessing an array directly with subscripts. When possible, use accessors such as `.first` or `.last`, which are optional and won’t crash. Prefer using a `for item in items` syntax when possible as opposed to something like `for i in 0 ..< items.count`. If you need to access an array subscript directly, use `.element(at:)` from `SwityCollection`. 
 
 * **3.9.2** Never use the `+=` or `+` operator to append/concatenate to arrays. Instead, use `.append()` or `.append(contentsOf:)` as these are far more performant (at least with respect to compilation) in Swift's current state. If you are declaring an array that is based on other arrays and want to keep it immutable, instead of `let myNewArray = arr1 + arr2`, use `let myNewArray = [arr1, arr2].joined()`.
 
+* **3.9.3**  If an iteraction on the collection needed to make transformation on the object then we prefer to use `.map` ,`.forEach`, unless there is a performance issue.
+
+
 ### 3.10 Error Handling
 
+* **3.10.1 Throwing Error**  
 Suppose a function `myFunction` is supposed to return a `String`, however, at some point it can run into an error. A common approach is to have this function return an optional `String?` where we return `nil` if something went wrong.
 
 Example:
@@ -805,10 +845,29 @@ func printSomeFile() {
     }
 }
 ```
+* **3.10.2 Returning Result Monad** 
+When need to throw an error from a function preferable to return `ALEither` monad. 
+
+```swift
+func readFile(named filename: String) throws -> ALRestult<String> {
+    guard let file = openFile(named: filename) else {
+        return .wrong(Error(message: "Unable to open file named \(filename)."))
+    }
+
+    let fileContents = file.read()
+    file.close()
+    return fileContents
+}
+
+func printSomeFile() {
+    readFile(named: filename).do({ print($0) })
+                             .onError({ print($0) })
+}
+```
 
 There are some exceptions in which it does make sense to use an optional as opposed to error handling. When the result should *semantically* potentially be `nil` as opposed to something going wrong while retrieving the result, it makes sense to return an optional instead of using error handling.
 
-In general, if a method can "fail", and the reason for the failure is not immediately obvious if using an optional return type, it probably makes sense for the method to throw an error.
+In general, if a method can "fail", and the reason for the failure is not immediately obvious if using an optional return type, it probably makes sense for the method to throw an error or return a monad.
 
 ### 3.11 Using `guard` Statements
 
@@ -835,7 +894,38 @@ func eatDoughnut(at index: Int) {
 }
 ```
 
-* **3.11.2** When unwrapping optionals, prefer `guard` statements as opposed to `if` statements to decrease the amount of nested indentation in your code.
+* **3.11.2** We prefer using optionals monad extension instead of unwrapping them, unless required. The extension takes care of unwrapping and calling a function if need
+```swift
+// PREFERRED
+
+monkeyIsland.do(bookVacation)
+monkeyIsland.do(bragAboutVacation)
+
+// NOT PREFERRED, UNLESS REQUIRED
+guard let monkeyIsland = monkeyIsland else {
+    return
+}
+bookVacation(on: monkeyIsland)
+bragAboutVacation(at: monkeyIsland)
+
+// NOT PREFERRED
+if let monkeyIsland = monkeyIsland {
+    bookVacation(on: monkeyIsland)
+    bragAboutVacation(at: monkeyIsland)
+}
+
+
+
+// EVEN LESS PREFERRED
+if monkeyIsland == nil {
+    return
+}
+bookVacation(on: monkeyIsland!)
+bragAboutVacation(at: monkeyIsland!)
+```
+
+
+* **3.11.3** When unwrapping optionals, prefer `guard` statements as opposed to `if` statements to decrease the amount of nested indentation in your code.
 
 ```swift
 // PREFERRED
@@ -859,7 +949,7 @@ bookVacation(on: monkeyIsland!)
 bragAboutVacation(at: monkeyIsland!)
 ```
 
-* **3.11.3** When deciding between using an `if` statement or a `guard` statement when unwrapping optionals is *not* involved, the most important thing to keep in mind is the readability of the code. There are many possible cases here, such as depending on two different booleans, a complicated logical statement involving multiple comparisons, etc., so in general, use your best judgement to write code that is readable and consistent. If you are unsure whether `guard` or `if` is more readable or they seem equally readable, prefer using `guard`.
+* **3.11.4** When deciding between using an `if` statement or a `guard` statement when unwrapping optionals is *not* involved, the most important thing to keep in mind is the readability of the code. There are many possible cases here, such as depending on two different booleans, a complicated logical statement involving multiple comparisons, etc., so in general, use your best judgement to write code that is readable and consistent. If you are unsure whether `guard` or `if` is more readable or they seem equally readable, prefer using `guard`.
 
 ```swift
 // an `if` statement is readable here
@@ -878,7 +968,7 @@ guard !operationFailed else {
 }
 ```
 
-* **3.11.4** If choosing between two different states, it makes more sense to use an `if` statement as opposed to a `guard` statement.
+* **3.11.5** If choosing between two different states, it makes more sense to use an `if` statement as opposed to a `guard` statement.
 
 ```swift
 // PREFERRED
@@ -897,7 +987,7 @@ guard isFriendly else {
 print("Hello, nice to meet you!")
 ```
 
-* **3.11.5** You should also use `guard` only if a failure should result in exiting the current context. Below is an example in which it makes more sense to use two `if` statements instead of using two `guard`s - we have two unrelated conditions that should not block one another.
+* **3.11.6** You should also use `guard` only if a failure should result in exiting the current context. Below is an example in which it makes more sense to use two `if` statements instead of using two `guard`s - we have two unrelated conditions that should not block one another.
 
 ```swift
 if let monkeyIsland = monkeyIsland {
@@ -909,7 +999,20 @@ if let woodchuck = woodchuck, canChuckWood(woodchuck) {
 }
 ```
 
-* **3.11.6** Often, we can run into a situation in which we need to unwrap multiple optionals using `guard` statements. In general, combine unwraps into a single `guard` statement if handling the failure of each unwrap is identical (e.g. just a `return`, `break`, `continue`, `throw`, or some other `@noescape`).
+
+* **3.11.6** You should also use `guard` only if a failure should result in exiting the current context. Below is an example in which it makes more sense to use two `if` statements instead of using two `guard`s - we have two unrelated conditions that should not block one another.
+
+```swift
+if let monkeyIsland = monkeyIsland {
+    bookVacation(onIsland: monkeyIsland)
+}
+
+if let woodchuck = woodchuck, canChuckWood(woodchuck) {
+    woodchuck.chuckWood()
+}
+```
+
+* **3.11.7** Often, we can run into a situation in which we need to unwrap multiple optionals using `guard` statements. In general, combine unwraps into a single `guard` statement if handling the failure of each unwrap is identical (e.g. just a `return`, `break`, `continue`, `throw`, or some other `@noescape`).
 
 ```swift
 // combined because we just return
@@ -933,17 +1036,22 @@ guard let thingThree = thingThree else {
 }
 ```
 
-* **3.11.7** Don’t use one-liners for `guard` statements.
-
+* **3.11.8** Don’t use one-liners for `guard` statements if it has anything but `return` keyword.
 
 ```swift
 // PREFERRED
+guard let thingOne = thingOne else { return }
+
+guard let thingOne = thingOne else { 
+    myCustomFunction()
+    return 
+}
+
+// NOT PREFERRED
 guard let thingOne = thingOne else {
     return
 }
 
-// NOT PREFERRED
-guard let thingOne = thingOne else { return }
 ```
 
 ## 4. Documentation/Comments
@@ -1035,15 +1143,16 @@ func myFunction() {
 * **4.2.1** Always leave a space after `//`.
 * **4.2.2** Always leave comments on their own line.
 * **4.2.3** When using `// MARK: - whatever`, leave a newline after the comment.
+* **4.2.4** When using `// MARK: - whatever`, start without a tab.
 
 ```swift
 class Pirate {
 
-    // MARK: - instance properties
+// MARK: - instance properties
 
     private let pirateName: String
 
-    // MARK: - initialization
+// MARK: - initialization
 
     init() {
         /* ... */
@@ -1051,3 +1160,20 @@ class Pirate {
 
 }
 ```
+
+## 5. Architecture/Patterns
+
+### 5.1 Singletons
+
+As a general rule we try to avoid usage of singletons. The instances are passed by to the clients via protocols.
+Sometimes we might need a singletone instance to save time on allocation of heavy resources. If this is a case, non high level client should access singleton. It sould be passed as a dependency via protocol. That helps during the testing and decouples code.
+
+* **5.1.1** Be aware of singleton problems like race conditions and stale data
+
+### 5.2 Functions/Files
+
+* **5.2.1** The size of a function should not exceed 30 lines of code.
+* **5.2.1** A function that uses a call that can reolved as an error shouldn't not skip the error. If it's no in responsibility of the function to process an erro then it should be repassed/rethrown to the client.
+* **5.2.3** We try to avoid classic Apple aproach where completion has 2 arguments: error and data as an optional. We use ALResult monad that contain either `.right` response or an `error`
+* **5.2.4** A file/class should not exceed more then 300 line of code. If this is the case consider braking down into composition.
+
